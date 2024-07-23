@@ -149,7 +149,8 @@
     "strict-event-emitter-types": "^2.0.0",
     "systeminformation": "^5.22.9",
     "uint8arraylist": "^2.4.7",
-    "xxhash-wasm": "1.0.2"
+    "xxhash-wasm": "1.0.2",
+    "xdelta3-wasm": "^1.0.0"
   },
   "devDependencies": {
     "@types/datastore-level": "^3.0.0",
