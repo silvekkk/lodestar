@@ -15,36 +15,36 @@ import {IBeaconDb} from "../../../db/interface.js";
 import {Metrics} from "../../../metrics/index.js";
 import {HistoricalStateRegen} from "./historicalState/index.js";
 import {
-  IStateStore,
+  IStateManager,
   StateResponse,
   StateResponseRaw,
-  StateStoreModules,
-  StateStoreOptions,
-  StateStoreWorkerApi,
-  StateStoreWorkerData,
+  StateManagerModules,
+  StateManagerOptions,
+  StateManagerWorkerApi,
+  StateManagerWorkerData,
 } from "./interface.js";
 
 // Worker constructor consider the path relative to the current working directory
 const WORKER_DIR = process.env.NODE_ENV === "test" ? "../../../lib/chain/historicalState" : "./";
 
-export class StateStore implements IStateStore {
+export class StateManager implements IStateManager {
   readonly logger: LoggerNode;
   readonly forkChoice: IForkChoice;
   readonly regen: QueuedStateRegenerator;
   readonly db: IBeaconDb;
   readonly config: BeaconConfig;
   readonly metrics: Metrics | null;
-  readonly opts: StateStoreOptions;
+  readonly opts: StateManagerOptions;
 
   // For now StateStore depends on `regen`, which is initialized in the BeaconChain constructor.
   // Due to that dependency we can not make the `constructor` method of this class private and only use `init`.
   // So we initialize the api (worker) in the `init` and assign to the object
-  api?: ModuleThread<StateStoreWorkerApi>;
+  api?: ModuleThread<StateManagerWorkerApi>;
   historicalStateRegen?: HistoricalStateRegen;
 
   private signal?: AbortSignal;
 
-  constructor(modules: StateStoreModules, opts: StateStoreOptions) {
+  constructor(modules: StateManagerModules, opts: StateManagerOptions) {
     this.logger = modules.logger;
     this.forkChoice = modules.forkChoice;
     this.regen = modules.regen;
@@ -58,7 +58,7 @@ export class StateStore implements IStateStore {
   }
 
   async init(): Promise<void> {
-    const workerData: StateStoreWorkerData = {
+    const workerData: StateManagerWorkerData = {
       chainConfigJson: chainConfigToJson(this.config),
       genesisValidatorsRoot: this.config.genesisValidatorsRoot,
       genesisTime: this.opts.genesisTime,
@@ -73,7 +73,7 @@ export class StateStore implements IStateStore {
       workerData,
     } as ConstructorParameters<typeof Worker>[1]);
 
-    this.api = await spawn<StateStoreWorkerApi>(worker, {
+    this.api = await spawn<StateManagerWorkerApi>(worker, {
       // A Lodestar Node may do very expensive task at start blocking the event loop and causing
       // the initialization to timeout. The number below is big enough to almost disable the timeout
       timeout: 5 * 60 * 1000,

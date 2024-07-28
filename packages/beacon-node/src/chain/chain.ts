@@ -101,8 +101,8 @@ import {DbCPStateDatastore} from "./stateCache/datastore/db.js";
 import {FileCPStateDatastore} from "./stateCache/datastore/file.js";
 import {SyncCommitteeRewards, computeSyncCommitteeRewards} from "./rewards/syncCommitteeRewards.js";
 import {AttestationsRewards, computeAttestationsRewards} from "./rewards/attestationsRewards.js";
-import {IStateStore} from "./stores/stateStore/interface.js";
-import {StateStore} from "./stores/stateStore/index.js";
+import {IStateManager} from "./manager/stateManager/interface.js";
+import {StateManager} from "./manager/stateManager/index.js";
 
 /**
  * Arbitrary constants, blobs and payloads should be consumed immediately in the same slot
@@ -131,7 +131,7 @@ export class BeaconChain implements IBeaconChain {
   readonly regen: QueuedStateRegenerator;
   readonly lightClientServer?: LightClientServer;
   readonly reprocessController: ReprocessController;
-  readonly stateStore: IStateStore;
+  readonly stateStore: IStateManager;
 
   // Ops pool
   readonly attestationPool: AttestationPool;
@@ -309,7 +309,7 @@ export class BeaconChain implements IBeaconChain {
       signal,
     });
 
-    this.stateStore = new StateStore(
+    this.stateStore = new StateManager(
       {
         config,
         metrics,

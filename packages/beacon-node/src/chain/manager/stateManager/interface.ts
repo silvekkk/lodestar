@@ -8,7 +8,7 @@ import {IBeaconDb} from "../../../db/interface.js";
 import {QueuedStateRegenerator, RegenCaller} from "../../regen/index.js";
 import {StateGetOpts} from "../../interface.js";
 
-export type StateStoreWorkerData = {
+export type StateManagerWorkerData = {
   chainConfigJson: Record<string, string>;
   genesisValidatorsRoot: Uint8Array;
   genesisTime: number;
@@ -19,12 +19,12 @@ export type StateStoreWorkerData = {
   loggerOpts: LoggerNodeOpts;
 };
 
-export type StateStoreOptions = {
+export type StateManagerOptions = {
   genesisTime: number;
   dbName: string;
 };
 
-export type StateStoreModules = {
+export type StateManagerModules = {
   db: IBeaconDb;
   regen: QueuedStateRegenerator;
   forkChoice: IForkChoice;
@@ -46,7 +46,7 @@ export type StateResponseRaw = {
   finalized: boolean;
 };
 
-export interface IStateStore {
+export interface IStateManager {
   init(): Promise<void>;
   close(): Promise<void>;
   getHeadStateAtEpoch: (epoch: Epoch, regenCaller: RegenCaller) => Promise<CachedBeaconStateAllForks>;
@@ -58,7 +58,7 @@ export interface IStateStore {
   scrapeMetrics: () => Promise<string>;
 }
 
-export type StateStoreWorkerApi = {
+export type StateManagerWorkerApi = {
   close(): Promise<void>;
   scrapeMetrics(): Promise<string>;
 };
