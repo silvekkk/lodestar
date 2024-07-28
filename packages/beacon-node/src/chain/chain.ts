@@ -132,7 +132,6 @@ export class BeaconChain implements IBeaconChain {
   readonly regen: QueuedStateRegenerator;
   readonly lightClientServer?: LightClientServer;
   readonly reprocessController: ReprocessController;
-  readonly historicalStateRegen?: HistoricalStateRegen;
   readonly stateStore: IStateStore;
 
   // Ops pool
@@ -191,7 +190,6 @@ export class BeaconChain implements IBeaconChain {
       eth1,
       executionEngine,
       executionBuilder,
-      historicalStateRegen,
     }: {
       config: BeaconConfig;
       db: IBeaconDb;
@@ -204,7 +202,6 @@ export class BeaconChain implements IBeaconChain {
       eth1: IEth1ForBlockProduction;
       executionEngine: IExecutionEngine;
       executionBuilder?: IExecutionBuilder;
-      historicalStateRegen?: HistoricalStateRegen;
     }
   ) {
     this.opts = opts;
@@ -219,7 +216,6 @@ export class BeaconChain implements IBeaconChain {
     this.eth1 = eth1;
     this.executionEngine = executionEngine;
     this.executionBuilder = executionBuilder;
-    this.historicalStateRegen = historicalStateRegen;
     const signal = this.abortController.signal;
     const emitter = new ChainEventEmitter();
     // by default, verify signatures on both main threads and worker threads
@@ -320,7 +316,6 @@ export class BeaconChain implements IBeaconChain {
         metrics,
         logger: this.logger.child({module: "chain"}),
         db,
-        historicalStateRegen: this.historicalStateRegen,
         regen,
         forkChoice,
         signal,

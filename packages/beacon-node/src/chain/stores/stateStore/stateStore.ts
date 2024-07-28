@@ -31,7 +31,6 @@ export class StateStore implements IStateStore {
   readonly logger: LoggerNode;
   readonly forkChoice: IForkChoice;
   readonly regen: QueuedStateRegenerator;
-  readonly historicalStateRegen?: HistoricalStateRegen;
   readonly db: IBeaconDb;
   readonly config: BeaconConfig;
   readonly metrics: Metrics | null;
@@ -41,18 +40,21 @@ export class StateStore implements IStateStore {
   // Due to that dependency we can not make the `constructor` method of this class private and only use `init`.
   // So we initialize the api (worker) in the `init` and assign to the object
   api?: ModuleThread<StateStoreWorkerApi>;
+  historicalStateRegen?: HistoricalStateRegen;
+
+  private signal?: AbortSignal;
 
   constructor(modules: StateStoreModules, opts: StateStoreOptions) {
     this.logger = modules.logger;
     this.forkChoice = modules.forkChoice;
     this.regen = modules.regen;
-    this.historicalStateRegen = modules.historicalStateRegen;
     this.db = modules.db;
     this.config = modules.config;
     this.metrics = modules.metrics;
+    this.signal = modules.signal;
     this.opts = opts;
 
-    modules.signal?.addEventListener("abort", async () => this.close(), {once: true});
+    this.signal?.addEventListener("abort", async () => this.close(), {once: true});
   }
 
   async init(): Promise<void> {
@@ -75,6 +77,17 @@ export class StateStore implements IStateStore {
       // A Lodestar Node may do very expensive task at start blocking the event loop and causing
       // the initialization to timeout. The number below is big enough to almost disable the timeout
       timeout: 5 * 60 * 1000,
+    });
+
+    this.historicalStateRegen = await HistoricalStateRegen.init({
+      opts: {
+        genesisTime: this.opts.genesisTime,
+        dbLocation: this.opts.dbName,
+      },
+      config: this.config,
+      metrics: this.metrics,
+      logger: this.logger.child({module: "chain"}),
+      signal: this.signal,
     });
   }
 

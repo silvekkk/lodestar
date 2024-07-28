@@ -21,7 +21,6 @@ import {getApi, BeaconRestApiServer} from "../api/index.js";
 import {initializeExecutionEngine, initializeExecutionBuilder} from "../execution/index.js";
 import {initializeEth1ForBlockProduction} from "../eth1/index.js";
 import {initCKZG, loadEthereumTrustedSetup, TrustedFileMode} from "../util/kzg.js";
-import {HistoricalStateRegen} from "../chain/historicalState/index.js";
 import {IBeaconNodeOptions} from "./options.js";
 import {runNodeNotifier} from "./notifier.js";
 
@@ -195,17 +194,6 @@ export class BeaconNode {
         )
       : null;
 
-    const historicalStateRegen = await HistoricalStateRegen.init({
-      opts: {
-        genesisTime: anchorState.genesisTime,
-        dbLocation: opts.db.name,
-      },
-      config,
-      metrics,
-      logger: logger.child({module: LoggerModule.chain}),
-      signal,
-    });
-
     const chain = new BeaconChain(
       {...opts.chain, dbName: opts.db.name},
       {
@@ -230,7 +218,6 @@ export class BeaconNode {
         executionBuilder: opts.executionBuilder.enabled
           ? initializeExecutionBuilder(opts.executionBuilder, config, metrics, logger)
           : undefined,
-        historicalStateRegen,
       }
     );
 
@@ -291,7 +278,7 @@ export class BeaconNode {
     const metricsServer = opts.metrics.enabled
       ? await getHttpMetricsServer(opts.metrics, {
           register: (metrics as Metrics).register,
-          getOtherMetrics: async () => Promise.all([network.scrapeMetrics(), historicalStateRegen.scrapeMetrics()]),
+          getOtherMetrics: async () => Promise.all([network.scrapeMetrics(), chain.stateStore.scrapeMetrics()]),
           logger: logger.child({module: LoggerModule.metrics}),
         })
       : null;

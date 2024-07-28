@@ -7,7 +7,6 @@ import {Metrics} from "../../../metrics/index.js";
 import {IBeaconDb} from "../../../db/interface.js";
 import {QueuedStateRegenerator, RegenCaller} from "../../regen/index.js";
 import {StateGetOpts} from "../../interface.js";
-import {HistoricalStateRegen} from "../../historicalState/index.js";
 
 export type StateStoreWorkerData = {
   chainConfigJson: Record<string, string>;
@@ -28,7 +27,6 @@ export type StateStoreOptions = {
 export type StateStoreModules = {
   db: IBeaconDb;
   regen: QueuedStateRegenerator;
-  historicalStateRegen?: HistoricalStateRegen;
   forkChoice: IForkChoice;
   config: BeaconConfig;
   logger: LoggerNode;
