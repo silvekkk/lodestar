@@ -221,7 +221,7 @@ export class BeaconNode {
       }
     );
 
-    await chain.stateStore.init();
+    await chain.stateManager.init();
     // Load persisted data from disk to in-memory caches
     await chain.loadFromDisk();
 
@@ -278,7 +278,7 @@ export class BeaconNode {
     const metricsServer = opts.metrics.enabled
       ? await getHttpMetricsServer(opts.metrics, {
           register: (metrics as Metrics).register,
-          getOtherMetrics: async () => Promise.all([network.scrapeMetrics(), chain.stateStore.scrapeMetrics()]),
+          getOtherMetrics: async () => Promise.all([network.scrapeMetrics(), chain.stateManager.scrapeMetrics()]),
           logger: logger.child({module: LoggerModule.metrics}),
         })
       : null;

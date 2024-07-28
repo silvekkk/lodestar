@@ -131,7 +131,7 @@ export class BeaconChain implements IBeaconChain {
   readonly regen: QueuedStateRegenerator;
   readonly lightClientServer?: LightClientServer;
   readonly reprocessController: ReprocessController;
-  readonly stateStore: IStateManager;
+  readonly stateManager: IStateManager;
 
   // Ops pool
   readonly attestationPool: AttestationPool;
@@ -309,7 +309,7 @@ export class BeaconChain implements IBeaconChain {
       signal,
     });
 
-    this.stateStore = new StateManager(
+    this.stateManager = new StateManager(
       {
         config,
         metrics,
@@ -405,35 +405,35 @@ export class BeaconChain implements IBeaconChain {
   }
 
   getHeadState(): CachedBeaconStateAllForks {
-    return this.stateStore.getHeadState();
+    return this.stateManager.getHeadState();
   }
 
   async getHeadStateAtCurrentEpoch(regenCaller: RegenCaller): Promise<CachedBeaconStateAllForks> {
-    return this.stateStore.getHeadStateAtEpoch(this.clock.currentEpoch, regenCaller);
+    return this.stateManager.getHeadStateAtEpoch(this.clock.currentEpoch, regenCaller);
   }
 
   async getHeadStateAtEpoch(epoch: Epoch, regenCaller: RegenCaller): Promise<CachedBeaconStateAllForks> {
-    return this.stateStore.getHeadStateAtEpoch(epoch, regenCaller);
+    return this.stateManager.getHeadStateAtEpoch(epoch, regenCaller);
   }
 
   async getStateBySlot(
     slot: Slot,
     opts?: StateGetOpts
   ): Promise<{state: BeaconStateAllForks; executionOptimistic: boolean; finalized: boolean} | null> {
-    return this.stateStore.getStateBySlot(slot, opts);
+    return this.stateManager.getStateBySlot(slot, opts);
   }
 
   async getHistoricalStateBySlot(
     slot: number
   ): Promise<{state: Uint8Array; executionOptimistic: boolean; finalized: boolean} | null> {
-    return this.stateStore.getHistoricalStateBySlot(slot);
+    return this.stateManager.getHistoricalStateBySlot(slot);
   }
 
   async getStateByStateRoot(
     stateRoot: RootHex,
     opts?: StateGetOpts
   ): Promise<{state: BeaconStateAllForks; executionOptimistic: boolean; finalized: boolean} | null> {
-    return this.stateStore.getStateByStateRoot(stateRoot, opts);
+    return this.stateManager.getStateByStateRoot(stateRoot, opts);
   }
 
   getStateByCheckpoint(
