@@ -35,9 +35,10 @@ import {
 } from "@lodestar/types";
 import {CheckpointWithHex, ExecutionStatus, IForkChoice, ProtoBlock, UpdateHeadOpt} from "@lodestar/fork-choice";
 import {ProcessShutdownCallback} from "@lodestar/validator";
-import {Logger, gweiToWei, isErrorAborted, pruneSetToMax, sleep, toHex} from "@lodestar/utils";
-import {ForkSeq, GENESIS_SLOT, SLOTS_PER_EPOCH} from "@lodestar/params";
+import {gweiToWei, isErrorAborted, pruneSetToMax, sleep, toHex} from "@lodestar/utils";
+import {ForkSeq, SLOTS_PER_EPOCH} from "@lodestar/params";
 
+import {LoggerNode} from "@lodestar/logger/lib/node.js";
 import {GENESIS_EPOCH, ZERO_HASH} from "../constants/index.js";
 import {IBeaconDb} from "../db/index.js";
 import {Metrics} from "../metrics/index.js";
@@ -101,6 +102,8 @@ import {DbCPStateDatastore} from "./stateCache/datastore/db.js";
 import {FileCPStateDatastore} from "./stateCache/datastore/file.js";
 import {SyncCommitteeRewards, computeSyncCommitteeRewards} from "./rewards/syncCommitteeRewards.js";
 import {AttestationsRewards, computeAttestationsRewards} from "./rewards/attestationsRewards.js";
+import {IStateStore} from "./stores/stateStore/interface.js";
+import {StateStore} from "./stores/stateStore/index.js";
 
 /**
  * Arbitrary constants, blobs and payloads should be consumed immediately in the same slot
@@ -117,7 +120,7 @@ export class BeaconChain implements IBeaconChain {
   readonly executionBuilder?: IExecutionBuilder;
   // Expose config for convenience in modularized functions
   readonly config: BeaconConfig;
-  readonly logger: Logger;
+  readonly logger: LoggerNode;
   readonly metrics: Metrics | null;
 
   readonly anchorStateLatestBlockSlot: Slot;
@@ -130,6 +133,7 @@ export class BeaconChain implements IBeaconChain {
   readonly lightClientServer?: LightClientServer;
   readonly reprocessController: ReprocessController;
   readonly historicalStateRegen?: HistoricalStateRegen;
+  readonly stateStore: IStateStore;
 
   // Ops pool
   readonly attestationPool: AttestationPool;
@@ -191,7 +195,7 @@ export class BeaconChain implements IBeaconChain {
     }: {
       config: BeaconConfig;
       db: IBeaconDb;
-      logger: Logger;
+      logger: LoggerNode;
       processShutdownCallback: ProcessShutdownCallback;
       /** Used for testing to supply fake clock */
       clock?: IClock;
@@ -310,6 +314,23 @@ export class BeaconChain implements IBeaconChain {
       signal,
     });
 
+    this.stateStore = new StateStore(
+      {
+        config,
+        metrics,
+        logger: this.logger.child({module: "chain"}),
+        db,
+        historicalStateRegen: this.historicalStateRegen,
+        regen,
+        forkChoice,
+        signal,
+      },
+      {
+        genesisTime: anchorState.genesisTime,
+        dbName: opts.dbName ?? "lodestar",
+      }
+    );
+
     if (!opts.disableLightClientServer) {
       this.lightClientServer = new LightClientServer(opts, {config, db, metrics, emitter, logger});
     }
@@ -390,129 +411,35 @@ export class BeaconChain implements IBeaconChain {
   }
 
   getHeadState(): CachedBeaconStateAllForks {
-    // head state should always exist
-    const head = this.forkChoice.getHead();
-    const headState = this.regen.getClosestHeadState(head);
-    if (!headState) {
-      throw Error(`headState does not exist for head root=${head.blockRoot} slot=${head.slot}`);
-    }
-    return headState;
+    return this.stateStore.getHeadState();
   }
 
   async getHeadStateAtCurrentEpoch(regenCaller: RegenCaller): Promise<CachedBeaconStateAllForks> {
-    return this.getHeadStateAtEpoch(this.clock.currentEpoch, regenCaller);
+    return this.stateStore.getHeadStateAtEpoch(this.clock.currentEpoch, regenCaller);
   }
 
   async getHeadStateAtEpoch(epoch: Epoch, regenCaller: RegenCaller): Promise<CachedBeaconStateAllForks> {
-    // using getHeadState() means we'll use checkpointStateCache if it's available
-    const headState = this.getHeadState();
-    // head state is in the same epoch, or we pulled up head state already from past epoch
-    if (epoch <= computeEpochAtSlot(headState.slot)) {
-      // should go to this most of the time
-      return headState;
-    }
-    // only use regen queue if necessary, it'll cache in checkpointStateCache if regen gets through epoch transition
-    const head = this.forkChoice.getHead();
-    const startSlot = computeStartSlotAtEpoch(epoch);
-    return this.regen.getBlockSlotState(head.blockRoot, startSlot, {dontTransferCache: true}, regenCaller);
+    return this.stateStore.getHeadStateAtEpoch(epoch, regenCaller);
   }
 
   async getStateBySlot(
     slot: Slot,
     opts?: StateGetOpts
   ): Promise<{state: BeaconStateAllForks; executionOptimistic: boolean; finalized: boolean} | null> {
-    const finalizedBlock = this.forkChoice.getFinalizedBlock();
-
-    if (slot < finalizedBlock.slot) {
-      // request for finalized state not supported in this API
-      // fall back to caller to look in db or getHistoricalStateBySlot
-      return null;
-    }
-
-    if (opts?.allowRegen) {
-      // Find closest canonical block to slot, then trigger regen
-      const block = this.forkChoice.getCanonicalBlockClosestLteSlot(slot) ?? finalizedBlock;
-      const state = await this.regen.getBlockSlotState(
-        block.blockRoot,
-        slot,
-        {dontTransferCache: true},
-        RegenCaller.restApi
-      );
-      return {
-        state,
-        executionOptimistic: isOptimisticBlock(block),
-        finalized: slot === finalizedBlock.slot && finalizedBlock.slot !== GENESIS_SLOT,
-      };
-    } else {
-      // Just check if state is already in the cache. If it's not dialed to the correct slot,
-      // do not bother in advancing the state. restApiCanTriggerRegen == false means do no work
-      const block = this.forkChoice.getCanonicalBlockAtSlot(slot);
-      if (!block) {
-        return null;
-      }
-
-      const state = this.regen.getStateSync(block.stateRoot);
-      return (
-        state && {
-          state,
-          executionOptimistic: isOptimisticBlock(block),
-          finalized: slot === finalizedBlock.slot && finalizedBlock.slot !== GENESIS_SLOT,
-        }
-      );
-    }
+    return this.stateStore.getStateBySlot(slot, opts);
   }
 
   async getHistoricalStateBySlot(
     slot: number
   ): Promise<{state: Uint8Array; executionOptimistic: boolean; finalized: boolean} | null> {
-    const finalizedBlock = this.forkChoice.getFinalizedBlock();
-
-    if (slot >= finalizedBlock.slot) {
-      return null;
-    }
-
-    // request for finalized state using historical state regen
-    const stateSerialized = await this.historicalStateRegen?.getHistoricalState(slot);
-    if (!stateSerialized) {
-      return null;
-    }
-
-    return {state: stateSerialized, executionOptimistic: false, finalized: true};
+    return this.stateStore.getHistoricalStateBySlot(slot);
   }
 
   async getStateByStateRoot(
     stateRoot: RootHex,
     opts?: StateGetOpts
   ): Promise<{state: BeaconStateAllForks; executionOptimistic: boolean; finalized: boolean} | null> {
-    if (opts?.allowRegen) {
-      const state = await this.regen.getState(stateRoot, RegenCaller.restApi);
-      const block = this.forkChoice.getBlock(state.latestBlockHeader.hashTreeRoot());
-      const finalizedEpoch = this.forkChoice.getFinalizedCheckpoint().epoch;
-      return {
-        state,
-        executionOptimistic: block != null && isOptimisticBlock(block),
-        finalized: state.epochCtx.epoch <= finalizedEpoch && finalizedEpoch !== GENESIS_EPOCH,
-      };
-    }
-
-    // TODO: This can only fulfill requests for a very narrow set of roots.
-    // - very recent states that happen to be in the cache
-    // - 1 every 100s of states that are persisted in the archive state
-
-    // TODO: This is very inneficient for debug requests of serialized content, since it deserializes to serialize again
-    const cachedStateCtx = this.regen.getStateSync(stateRoot);
-    if (cachedStateCtx) {
-      const block = this.forkChoice.getBlock(cachedStateCtx.latestBlockHeader.hashTreeRoot());
-      const finalizedEpoch = this.forkChoice.getFinalizedCheckpoint().epoch;
-      return {
-        state: cachedStateCtx,
-        executionOptimistic: block != null && isOptimisticBlock(block),
-        finalized: cachedStateCtx.epochCtx.epoch <= finalizedEpoch && finalizedEpoch !== GENESIS_EPOCH,
-      };
-    }
-
-    const data = await this.db.stateArchive.getByRoot(fromHexString(stateRoot));
-    return data && {state: data, executionOptimistic: false, finalized: true};
+    return this.stateStore.getStateByStateRoot(stateRoot, opts);
   }
 
   getStateByCheckpoint(

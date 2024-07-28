@@ -206,31 +206,35 @@ export class BeaconNode {
       signal,
     });
 
-    const chain = new BeaconChain(opts.chain, {
-      config,
-      db,
-      logger: logger.child({module: LoggerModule.chain}),
-      processShutdownCallback,
-      metrics,
-      anchorState,
-      eth1: initializeEth1ForBlockProduction(opts.eth1, {
+    const chain = new BeaconChain(
+      {...opts.chain, dbName: opts.db.name},
+      {
         config,
         db,
+        logger: logger.child({module: LoggerModule.chain}),
+        processShutdownCallback,
         metrics,
-        logger: logger.child({module: LoggerModule.eth1}),
-        signal,
-      }),
-      executionEngine: initializeExecutionEngine(opts.executionEngine, {
-        metrics,
-        signal,
-        logger: logger.child({module: LoggerModule.execution}),
-      }),
-      executionBuilder: opts.executionBuilder.enabled
-        ? initializeExecutionBuilder(opts.executionBuilder, config, metrics, logger)
-        : undefined,
-      historicalStateRegen,
-    });
+        anchorState,
+        eth1: initializeEth1ForBlockProduction(opts.eth1, {
+          config,
+          db,
+          metrics,
+          logger: logger.child({module: LoggerModule.eth1}),
+          signal,
+        }),
+        executionEngine: initializeExecutionEngine(opts.executionEngine, {
+          metrics,
+          signal,
+          logger: logger.child({module: LoggerModule.execution}),
+        }),
+        executionBuilder: opts.executionBuilder.enabled
+          ? initializeExecutionBuilder(opts.executionBuilder, config, metrics, logger)
+          : undefined,
+        historicalStateRegen,
+      }
+    );
 
+    await chain.stateStore.init();
     // Load persisted data from disk to in-memory caches
     await chain.loadFromDisk();
 
