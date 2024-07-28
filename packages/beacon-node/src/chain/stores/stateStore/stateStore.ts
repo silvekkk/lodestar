@@ -12,8 +12,8 @@ import {RegenCaller} from "../../regen/interface.js";
 import {QueuedStateRegenerator} from "../../regen/queued.js";
 import {isOptimisticBlock} from "../../../util/forkChoice.js";
 import {IBeaconDb} from "../../../db/interface.js";
-import {HistoricalStateRegen} from "../../historicalState/index.js";
 import {Metrics} from "../../../metrics/index.js";
+import {HistoricalStateRegen} from "./historicalState/index.js";
 import {
   IStateStore,
   StateResponse,

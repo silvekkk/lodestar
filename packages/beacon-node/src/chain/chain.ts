@@ -90,7 +90,6 @@ import {BlockAttributes, produceBlockBody, produceCommonBlockBody} from "./produ
 import {computeNewStateRoot} from "./produceBlock/computeNewStateRoot.js";
 import {BlockInput} from "./blocks/types.js";
 import {SeenAttestationDatas} from "./seenCache/seenAttestationData.js";
-import {HistoricalStateRegen} from "./historicalState/index.js";
 import {BlockRewards, computeBlockRewards} from "./rewards/blockRewards.js";
 import {ShufflingCache} from "./shufflingCache.js";
 import {BlockStateCacheImpl} from "./stateCache/blockStateCacheImpl.js";
