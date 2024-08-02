@@ -1,12 +1,13 @@
 import {Slot} from "@lodestar/types";
 import {Logger} from "@lodestar/logger";
 import {BeaconConfig} from "@lodestar/config";
-import {computeEpochAtSlot} from "@lodestar/state-transition";
+import {computeEpochAtSlot, computeStartSlotAtEpoch} from "@lodestar/state-transition";
 import {QueuedStateRegenerator, RegenCaller} from "../../regen/index.js";
 import {IBeaconDb} from "../../../db/index.js";
-import {StateStorageStrategy} from "../interface.js";
+import {IStateStorageStrategy} from "../interface.js";
+import {SNAPSHOT_FULL_STATE_EVERY_EPOCHS} from "../constants.js";
 
-export class StateSnapshotStrategy implements StateStorageStrategy {
+export class StateSnapshotStrategy implements IStateStorageStrategy {
   constructor(private modules: {regen: QueuedStateRegenerator; db: IBeaconDb; logger: Logger; config: BeaconConfig}) {}
 
   async store({slot, blockRoot}: {slot: Slot; blockRoot: string}): Promise<void> {
@@ -27,5 +28,17 @@ export class StateSnapshotStrategy implements StateStorageStrategy {
 
   async get(slot: Slot): Promise<Uint8Array | null> {
     return this.modules.db.stateArchive.getBinary(slot);
+  }
+
+  isSlotCompatible(slot: Slot): boolean {
+    return computeEpochAtSlot(slot) % SNAPSHOT_FULL_STATE_EVERY_EPOCHS === 0;
+  }
+
+  getLastCompatibleSlot(slot: Slot): Slot {
+    const epoch = computeEpochAtSlot(slot);
+
+    if (this.isSlotCompatible(computeEpochAtSlot(slot))) return computeStartSlotAtEpoch(epoch);
+
+    return Math.max(0, computeStartSlotAtEpoch(epoch - SNAPSHOT_FULL_STATE_EVERY_EPOCHS));
   }
 }

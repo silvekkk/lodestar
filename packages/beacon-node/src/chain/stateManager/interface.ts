@@ -65,6 +65,12 @@ export type StateManagerWorkerApi = {
   scrapeMetrics(): Promise<string>;
 };
 
+export enum StateStorageStrategy {
+  Snapshot = "snapshot",
+  Diff = "diff",
+  Empty = "empty",
+}
+
 export type StateManagerStrategyModules = {
   regen: QueuedStateRegenerator;
   db: IBeaconDb;
@@ -72,7 +78,11 @@ export type StateManagerStrategyModules = {
   config: BeaconConfig;
 };
 
-export interface StateStorageStrategy {
-  store: (opts: {slot: Slot; blockRoot: string}) => Promise<void>;
+export type LastFullStateHelper = (slot: Slot) => Promise<{state: Uint8Array | null; slot: Slot}>;
+
+export interface IStateStorageStrategy {
+  isSlotCompatible: (slot: Slot) => boolean;
+  getLastCompatibleSlot: (slot: Slot) => Slot;
+  store: (opts: {slot: Slot; blockRoot: string}, helpers: {getLastFullState: LastFullStateHelper}) => Promise<void>;
   get: (slot: Slot) => Promise<Uint8Array | null>;
 }

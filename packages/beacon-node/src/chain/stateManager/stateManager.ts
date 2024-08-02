@@ -22,13 +22,10 @@ import {
   StateManagerOptions,
   StateManagerWorkerApi,
   StateManagerWorkerData,
-} from "./interface.js";
-import {
-  StateSnapshotStrategy,
-  StateDiffStrategy,
-  getStateStorageStrategy,
   StateStorageStrategy,
-} from "./strategies/index.js";
+  IStateStorageStrategy,
+} from "./interface.js";
+import {StateSnapshotStrategy, StateDiffStrategy, StateEmptyStrategy} from "./strategies/index.js";
 
 // Worker constructor consider the path relative to the current working directory
 const WORKER_DIR = process.env.NODE_ENV === "test" ? "../../../lib/chain/historicalState" : "./";
@@ -40,8 +37,7 @@ export class StateManager implements IStateManager {
   readonly db: IBeaconDb;
   readonly config: BeaconConfig;
   readonly metrics: Metrics | null;
-  readonly snapshotStrategy: StateSnapshotStrategy;
-  readonly diffStrategy: StateDiffStrategy;
+  readonly strategies: Record<StateStorageStrategy, IStateStorageStrategy>;
   readonly opts: StateManagerOptions;
 
   // For now StateStore depends on `regen`, which is initialized in the BeaconChain constructor.
@@ -62,19 +58,22 @@ export class StateManager implements IStateManager {
     this.signal = modules.signal;
     this.opts = opts;
 
-    this.snapshotStrategy = new StateSnapshotStrategy({
+    const storageModules = {
       regen: this.regen,
       db: this.db,
       logger: this.logger,
       config: this.config,
-    });
+    };
 
-    this.diffStrategy = new StateDiffStrategy({
-      regen: this.regen,
-      db: this.db,
-      logger: this.logger,
-      config: this.config,
-    });
+    const snapshotStrategy = new StateSnapshotStrategy(storageModules);
+    const diffStrategy = new StateDiffStrategy(storageModules);
+    const emptyStrategy = new StateEmptyStrategy(storageModules);
+
+    this.strategies = {
+      [StateStorageStrategy.Snapshot]: snapshotStrategy,
+      [StateStorageStrategy.Diff]: diffStrategy,
+      [StateStorageStrategy.Empty]: emptyStrategy,
+    };
 
     this.signal?.addEventListener("abort", async () => this.close(), {once: true});
   }
@@ -257,22 +256,32 @@ export class StateManager implements IStateManager {
     return null;
   }
 
+  getStorageStrategies(slot: Slot): StateStorageStrategy[] {
+    // We assume that one state can be stored with different strategies
+    return Object.entries(this.strategies)
+      .map(([key, value]) => {
+        if (value.isSlotCompatible(slot)) return key;
+        return false;
+      })
+      .filter(Boolean) as StateStorageStrategy[];
+  }
+
   // TODO: For now this function will be used only for finalized state
   // later this should also process the hot states as well
   async storeState(checkpoint: CheckpointWithHex): Promise<void> {
     const slot = checkpoint.epoch * SLOTS_PER_EPOCH;
-    const strategy = getStateStorageStrategy(slot);
 
-    switch (strategy) {
-      case StateStorageStrategy.Snapshot:
-        await this.snapshotStrategy.store({slot, blockRoot: checkpoint.rootHex});
-        break;
-      case StateStorageStrategy.Diff:
-        await this.diffStrategy.store({slot, blockRoot: checkpoint.rootHex});
-        break;
-      case StateStorageStrategy.Skip:
-        // For now we process state at start of epoch only
-        break;
+    for (const strategy of this.getStorageStrategies(slot)) {
+      await this.strategies[strategy].store(
+        {slot, blockRoot: checkpoint.rootHex},
+        {
+          getLastFullState: async (slot) => {
+            const lastFullStateSlot = this.strategies.snapshot.getLastCompatibleSlot(slot);
+            const lastFullState = await this.strategies.snapshot.get(lastFullStateSlot);
+            return {state: lastFullState, slot: lastFullStateSlot};
+          },
+        }
+      );
     }
   }
 }
