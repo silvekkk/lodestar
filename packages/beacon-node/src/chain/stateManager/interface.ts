@@ -3,6 +3,7 @@ import {LoggerNode, LoggerNodeOpts} from "@lodestar/logger/node";
 import {Epoch, RootHex, Slot} from "@lodestar/types";
 import {CheckpointWithHex, IForkChoice} from "@lodestar/fork-choice";
 import {BeaconStateAllForks, CachedBeaconStateAllForks} from "@lodestar/state-transition";
+import {Logger} from "@lodestar/logger";
 import {Metrics} from "../../metrics/index.js";
 import {IBeaconDb} from "../../db/interface.js";
 import {QueuedStateRegenerator, RegenCaller} from "../regen/index.js";
@@ -63,3 +64,15 @@ export type StateManagerWorkerApi = {
   close(): Promise<void>;
   scrapeMetrics(): Promise<string>;
 };
+
+export type StateManagerStrategyModules = {
+  regen: QueuedStateRegenerator;
+  db: IBeaconDb;
+  logger: Logger;
+  config: BeaconConfig;
+};
+
+export interface StateStorageStrategy {
+  store: (opts: {slot: Slot; blockRoot: string}) => Promise<void>;
+  get: (slot: Slot) => Promise<Uint8Array | null>;
+}

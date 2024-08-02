@@ -265,10 +265,10 @@ export class StateManager implements IStateManager {
 
     switch (strategy) {
       case StateStorageStrategy.Snapshot:
-        await this.snapshotStrategy.process(checkpoint);
+        await this.snapshotStrategy.store({slot, blockRoot: checkpoint.rootHex});
         break;
       case StateStorageStrategy.Diff:
-        await this.diffStrategy.process(checkpoint);
+        await this.diffStrategy.store({slot, blockRoot: checkpoint.rootHex});
         break;
       case StateStorageStrategy.Skip:
         // For now we process state at start of epoch only
