@@ -6,7 +6,7 @@ import {LoggerNode} from "@lodestar/logger/node";
 import {BeaconConfig, chainConfigToJson} from "@lodestar/config";
 import {CheckpointWithHex, IForkChoice} from "@lodestar/fork-choice";
 import {CachedBeaconStateAllForks, computeEpochAtSlot, computeStartSlotAtEpoch} from "@lodestar/state-transition";
-import {GENESIS_EPOCH, GENESIS_SLOT} from "@lodestar/params";
+import {GENESIS_EPOCH, GENESIS_SLOT, SLOTS_PER_EPOCH} from "@lodestar/params";
 import {StateGetOpts} from "../../interface.js";
 import {RegenCaller} from "../../regen/interface.js";
 import {QueuedStateRegenerator} from "../../regen/queued.js";
@@ -23,6 +23,12 @@ import {
   StateManagerWorkerApi,
   StateManagerWorkerData,
 } from "./interface.js";
+import {
+  StateSnapshotStrategy,
+  StateDiffStrategy,
+  getStateStorageStrategy,
+  StateStorageStrategy,
+} from "./strategies/index.js";
 
 // Worker constructor consider the path relative to the current working directory
 const WORKER_DIR = process.env.NODE_ENV === "test" ? "../../../lib/chain/historicalState" : "./";
@@ -34,6 +40,8 @@ export class StateManager implements IStateManager {
   readonly db: IBeaconDb;
   readonly config: BeaconConfig;
   readonly metrics: Metrics | null;
+  readonly snapshotStrategy: StateSnapshotStrategy;
+  readonly diffStrategy: StateDiffStrategy;
   readonly opts: StateManagerOptions;
 
   // For now StateStore depends on `regen`, which is initialized in the BeaconChain constructor.
@@ -53,6 +61,20 @@ export class StateManager implements IStateManager {
     this.metrics = modules.metrics;
     this.signal = modules.signal;
     this.opts = opts;
+
+    this.snapshotStrategy = new StateSnapshotStrategy({
+      regen: this.regen,
+      db: this.db,
+      logger: this.logger,
+      config: this.config,
+    });
+
+    this.diffStrategy = new StateDiffStrategy({
+      regen: this.regen,
+      db: this.db,
+      logger: this.logger,
+      config: this.config,
+    });
 
     this.signal?.addEventListener("abort", async () => this.close(), {once: true});
   }
@@ -233,5 +255,24 @@ export class StateManager implements IStateManager {
     }
 
     return null;
+  }
+
+  // TODO: For now this function will be used only for finalized state
+  // later this should also process the hot states as well
+  async storeState(checkpoint: CheckpointWithHex): Promise<void> {
+    const slot = checkpoint.epoch * SLOTS_PER_EPOCH;
+    const strategy = getStateStorageStrategy(slot);
+
+    switch (strategy) {
+      case StateStorageStrategy.Snapshot:
+        await this.snapshotStrategy.process(checkpoint);
+        break;
+      case StateStorageStrategy.Diff:
+        await this.diffStrategy.process(checkpoint);
+        break;
+      case StateStorageStrategy.Skip:
+        // For now we process state at start of epoch only
+        break;
+    }
   }
 }

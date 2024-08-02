@@ -55,6 +55,7 @@ export interface IStateManager {
   getStateByStateRoot: (stateRoot: RootHex, opts?: StateGetOpts) => Promise<StateResponse | null>;
   getHistoricalStateBySlot: (slot: Slot) => Promise<StateResponseRaw | null>;
   getStateByCheckpoint: (checkpoint: CheckpointWithHex) => Promise<StateResponse | null>;
+  storeState: (checkpoint: CheckpointWithHex) => Promise<void>;
   scrapeMetrics: () => Promise<string>;
 }
 
