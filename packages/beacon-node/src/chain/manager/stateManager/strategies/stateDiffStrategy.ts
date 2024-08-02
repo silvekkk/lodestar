@@ -4,7 +4,7 @@ import {CheckpointWithHex} from "@lodestar/fork-choice";
 import {BeaconConfig} from "@lodestar/config";
 import {QueuedStateRegenerator} from "../../../regen/index.js";
 import {IBeaconDb} from "../../../../db/index.js";
-import {BinaryDiffCodec} from "../../../../../lib/util/binaryDiffCodec.js";
+import {BinaryDiffCodec} from "../../../../util/binaryDiffCodec.js";
 
 export class StateDiffStrategy {
   private initialized: boolean = false;
