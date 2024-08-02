@@ -3,10 +3,10 @@ import {LoggerNode, LoggerNodeOpts} from "@lodestar/logger/node";
 import {Epoch, RootHex, Slot} from "@lodestar/types";
 import {CheckpointWithHex, IForkChoice} from "@lodestar/fork-choice";
 import {BeaconStateAllForks, CachedBeaconStateAllForks} from "@lodestar/state-transition";
-import {Metrics} from "../../../metrics/index.js";
-import {IBeaconDb} from "../../../db/interface.js";
-import {QueuedStateRegenerator, RegenCaller} from "../../regen/index.js";
-import {StateGetOpts} from "../../interface.js";
+import {Metrics} from "../../metrics/index.js";
+import {IBeaconDb} from "../../db/interface.js";
+import {QueuedStateRegenerator, RegenCaller} from "../regen/index.js";
+import {StateGetOpts} from "../interface.js";
 
 export type StateManagerWorkerData = {
   chainConfigJson: Record<string, string>;

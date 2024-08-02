@@ -2,9 +2,9 @@ import {Slot} from "@lodestar/types";
 import {Logger} from "@lodestar/logger";
 import {CheckpointWithHex} from "@lodestar/fork-choice";
 import {BeaconConfig} from "@lodestar/config";
-import {QueuedStateRegenerator} from "../../../regen/index.js";
-import {IBeaconDb} from "../../../../db/index.js";
-import {BinaryDiffCodec} from "../../../../util/binaryDiffCodec.js";
+import {QueuedStateRegenerator} from "../../regen/index.js";
+import {IBeaconDb} from "../../../db/index.js";
+import {BinaryDiffCodec} from "../../../util/binaryDiffCodec.js";
 
 export class StateDiffStrategy {
   private initialized: boolean = false;

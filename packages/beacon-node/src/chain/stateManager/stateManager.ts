@@ -7,12 +7,12 @@ import {BeaconConfig, chainConfigToJson} from "@lodestar/config";
 import {CheckpointWithHex, IForkChoice} from "@lodestar/fork-choice";
 import {CachedBeaconStateAllForks, computeEpochAtSlot, computeStartSlotAtEpoch} from "@lodestar/state-transition";
 import {GENESIS_EPOCH, GENESIS_SLOT, SLOTS_PER_EPOCH} from "@lodestar/params";
-import {StateGetOpts} from "../../interface.js";
-import {RegenCaller} from "../../regen/interface.js";
-import {QueuedStateRegenerator} from "../../regen/queued.js";
-import {isOptimisticBlock} from "../../../util/forkChoice.js";
-import {IBeaconDb} from "../../../db/interface.js";
-import {Metrics} from "../../../metrics/index.js";
+import {StateGetOpts} from "../interface.js";
+import {RegenCaller} from "../regen/interface.js";
+import {QueuedStateRegenerator} from "../regen/queued.js";
+import {isOptimisticBlock} from "../../util/forkChoice.js";
+import {IBeaconDb} from "../../db/interface.js";
+import {Metrics} from "../../metrics/index.js";
 import {HistoricalStateRegen} from "./historicalState/index.js";
 import {
   IStateManager,
