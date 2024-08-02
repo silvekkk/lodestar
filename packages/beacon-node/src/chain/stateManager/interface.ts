@@ -78,11 +78,13 @@ export type StateManagerStrategyModules = {
   config: BeaconConfig;
 };
 
-export type LastFullStateHelper = (slot: Slot) => Promise<{state: Uint8Array | null; slot: Slot}>;
+export type StorageStrategyContext = {
+  getLastFullState: (slot: Slot) => Promise<{state: Uint8Array | null; slot: Slot}>;
+};
 
 export interface IStateStorageStrategy {
   isSlotCompatible: (slot: Slot) => boolean;
   getLastCompatibleSlot: (slot: Slot) => Slot;
-  store: (opts: {slot: Slot; blockRoot: string}, helpers: {getLastFullState: LastFullStateHelper}) => Promise<void>;
-  get: (slot: Slot) => Promise<Uint8Array | null>;
+  store: (opts: {slot: Slot; blockRoot: string}, context?: StorageStrategyContext) => Promise<void>;
+  get: (slot: Slot, context?: StorageStrategyContext) => Promise<Uint8Array | null>;
 }

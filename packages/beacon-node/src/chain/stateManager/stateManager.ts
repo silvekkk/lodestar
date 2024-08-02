@@ -24,6 +24,7 @@ import {
   StateManagerWorkerData,
   StateStorageStrategy,
   IStateStorageStrategy,
+  StorageStrategyContext,
 } from "./interface.js";
 import {StateSnapshotStrategy, StateDiffStrategy, StateEmptyStrategy} from "./strategies/index.js";
 
@@ -272,16 +273,17 @@ export class StateManager implements IStateManager {
     const slot = checkpoint.epoch * SLOTS_PER_EPOCH;
 
     for (const strategy of this.getStorageStrategies(slot)) {
-      await this.strategies[strategy].store(
-        {slot, blockRoot: checkpoint.rootHex},
-        {
-          getLastFullState: async (slot) => {
-            const lastFullStateSlot = this.strategies.snapshot.getLastCompatibleSlot(slot);
-            const lastFullState = await this.strategies.snapshot.get(lastFullStateSlot);
-            return {state: lastFullState, slot: lastFullStateSlot};
-          },
-        }
-      );
+      await this.strategies[strategy].store({slot, blockRoot: checkpoint.rootHex}, this.getStorageContext());
     }
+  }
+
+  private getStorageContext(): StorageStrategyContext {
+    return {
+      getLastFullState: async (slot) => {
+        const lastFullStateSlot = this.strategies.snapshot.getLastCompatibleSlot(slot);
+        const lastFullState = await this.strategies.snapshot.get(lastFullStateSlot);
+        return {state: lastFullState, slot: lastFullStateSlot};
+      },
+    };
   }
 }

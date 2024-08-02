@@ -2,6 +2,7 @@ import {Slot} from "@lodestar/types";
 import {Logger} from "@lodestar/logger";
 import {BeaconConfig} from "@lodestar/config";
 import {computeEpochAtSlot, computeStartSlotAtEpoch} from "@lodestar/state-transition";
+import {SLOTS_PER_EPOCH} from "@lodestar/params";
 import {QueuedStateRegenerator, RegenCaller} from "../../regen/index.js";
 import {IBeaconDb} from "../../../db/index.js";
 import {IStateStorageStrategy} from "../interface.js";
@@ -31,7 +32,7 @@ export class StateSnapshotStrategy implements IStateStorageStrategy {
   }
 
   isSlotCompatible(slot: Slot): boolean {
-    return computeEpochAtSlot(slot) % SNAPSHOT_FULL_STATE_EVERY_EPOCHS === 0;
+    return slot % SLOTS_PER_EPOCH === 0 && computeEpochAtSlot(slot) % SNAPSHOT_FULL_STATE_EVERY_EPOCHS === 0;
   }
 
   getLastCompatibleSlot(slot: Slot): Slot {

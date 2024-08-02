@@ -12,6 +12,11 @@ export class StateEmptyStrategy implements IStateStorageStrategy {
   async store(_opts: {slot: Slot; blockRoot: string}): Promise<void> {}
 
   async get(_slot: Slot): Promise<Uint8Array | null> {
+    // If slot is snapshot slot, return snapshot
+    // If slot is epoch boundary, return state diff
+    // If slot is in middle of epoch
+    //  - get state diff for epoch start
+    //  - replay remaining blocks
     return null;
   }
 
