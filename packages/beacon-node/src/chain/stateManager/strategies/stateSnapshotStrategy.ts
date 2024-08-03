@@ -5,10 +5,10 @@ import {computeEpochAtSlot, computeStartSlotAtEpoch} from "@lodestar/state-trans
 import {SLOTS_PER_EPOCH} from "@lodestar/params";
 import {QueuedStateRegenerator, RegenCaller} from "../../regen/index.js";
 import {IBeaconDb} from "../../../db/index.js";
-import {IStateStorageStrategy} from "../interface.js";
+import {IStateStorageStrategy, StateStorageStrategy} from "../interface.js";
 import {SNAPSHOT_FULL_STATE_EVERY_EPOCHS} from "../constants.js";
 
-export class StateSnapshotStrategy implements IStateStorageStrategy {
+export class StateSnapshotStrategy implements IStateStorageStrategy<StateStorageStrategy.Snapshot> {
   constructor(private modules: {regen: QueuedStateRegenerator; db: IBeaconDb; logger: Logger; config: BeaconConfig}) {}
 
   async store({slot, blockRoot}: {slot: Slot; blockRoot: string}): Promise<void> {

@@ -6,10 +6,10 @@ import {computeEpochAtSlot, computeStartSlotAtEpoch} from "@lodestar/state-trans
 import {QueuedStateRegenerator, RegenCaller} from "../../regen/index.js";
 import {IBeaconDb} from "../../../db/index.js";
 import {BinaryDiffCodec} from "../../../util/binaryDiffCodec.js";
-import {IStateStorageStrategy, StorageStrategyContext} from "../interface.js";
+import {IStateStorageStrategy, StateStorageStrategy, StorageStrategyContext} from "../interface.js";
 import {SNAPSHOT_FULL_STATE_EVERY_EPOCHS} from "../constants.js";
 
-export class StateDiffStrategy implements IStateStorageStrategy {
+export class StateDiffStrategy implements IStateStorageStrategy<StateStorageStrategy.Diff> {
   private initialized: boolean = false;
   private codec: BinaryDiffCodec;
 
@@ -17,7 +17,10 @@ export class StateDiffStrategy implements IStateStorageStrategy {
     this.codec = new BinaryDiffCodec();
   }
 
-  async store({slot, blockRoot}: {slot: Slot; blockRoot: string}, context?: StorageStrategyContext): Promise<void> {
+  async store(
+    {slot, blockRoot}: {slot: Slot; blockRoot: string},
+    context?: StorageStrategyContext<StateStorageStrategy.Diff>
+  ): Promise<void> {
     if (!context) throw new Error("Must provide context for state diff strategy");
 
     if (!this.initialized) {
@@ -37,7 +40,7 @@ export class StateDiffStrategy implements IStateStorageStrategy {
     await this.modules.db.stateArchive.putBinary(slot, diff);
   }
 
-  async get(slot: Slot, context?: StorageStrategyContext): Promise<Uint8Array | null> {
+  async get(slot: Slot, context?: StorageStrategyContext<StateStorageStrategy.Diff>): Promise<Uint8Array | null> {
     if (!context) throw new Error("Must provide context for state diff strategy");
     if (!this.isSlotCompatible(slot)) throw new Error(`The slot=${slot} is not compatible for DiffStrategy `);
 
@@ -57,10 +60,14 @@ export class StateDiffStrategy implements IStateStorageStrategy {
     return Math.max(0, computeStartSlotAtEpoch(epoch - 1));
   }
 
-  async replayStateDiffsTill(slot: Slot, context?: StorageStrategyContext): Promise<Uint8Array> {
+  async replayStateDiffsTill(
+    slot: Slot,
+    context?: StorageStrategyContext<StateStorageStrategy.Diff>
+  ): Promise<Uint8Array> {
     if (!context) throw new Error("Must provide context for state diff strategy");
 
-    const {state: snapshotState, slot: snapshotSlot} = await context.getLastFullState(slot);
+    const snapshotSlot = context.strategies.snapshot.getLastCompatibleSlot(slot);
+    const snapshotState = await context.strategies.snapshot.get(snapshotSlot);
     if (!snapshotState) {
       throw Error(`Can not find last snapshot state at slot=${snapshotSlot}`);
     }

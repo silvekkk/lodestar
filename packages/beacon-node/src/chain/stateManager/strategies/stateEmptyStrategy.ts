@@ -4,9 +4,9 @@ import {BeaconConfig} from "@lodestar/config";
 import {SLOTS_PER_EPOCH} from "@lodestar/params";
 import {QueuedStateRegenerator} from "../../regen/index.js";
 import {IBeaconDb} from "../../../db/index.js";
-import {IStateStorageStrategy} from "../interface.js";
+import {IStateStorageStrategy, StateStorageStrategy} from "../interface.js";
 
-export class StateEmptyStrategy implements IStateStorageStrategy {
+export class StateEmptyStrategy implements IStateStorageStrategy<StateStorageStrategy.Empty> {
   constructor(private modules: {regen: QueuedStateRegenerator; db: IBeaconDb; logger: Logger; config: BeaconConfig}) {}
 
   async store(_opts: {slot: Slot; blockRoot: string}): Promise<void> {}
