@@ -25,7 +25,7 @@ import {
   StateStorageStrategy,
   IStateStorageStrategy,
 } from "./interface.js";
-import {StateSnapshotStrategy, StateDiffStrategy, StateEmptyStrategy} from "./strategies/index.js";
+import {StateSnapshotStrategy, StateDiffStrategy, StateSlotStrategy} from "./strategies/index.js";
 
 // Worker constructor consider the path relative to the current working directory
 const WORKER_DIR = process.env.NODE_ENV === "test" ? "../../../lib/chain/historicalState" : "./";
@@ -68,12 +68,12 @@ export class StateManager implements IStateManager {
 
     const snapshotStrategy = new StateSnapshotStrategy(storageModules);
     const diffStrategy = new StateDiffStrategy(storageModules);
-    const emptyStrategy = new StateEmptyStrategy(storageModules);
+    const emptyStrategy = new StateSlotStrategy(storageModules);
 
     this.strategies = {
       [StateStorageStrategy.Snapshot]: snapshotStrategy,
       [StateStorageStrategy.Diff]: diffStrategy,
-      [StateStorageStrategy.Empty]: emptyStrategy,
+      [StateStorageStrategy.Slot]: emptyStrategy,
     };
 
     this.signal?.addEventListener("abort", async () => this.close(), {once: true});

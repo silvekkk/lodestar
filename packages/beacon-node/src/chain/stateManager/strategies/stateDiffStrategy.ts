@@ -67,7 +67,7 @@ export class StateDiffStrategy implements IStateStorageStrategy<StateStorageStra
     if (!context) throw new Error("Must provide context for state diff strategy");
 
     const snapshotSlot = context.strategies.snapshot.getLastCompatibleSlot(slot);
-    const snapshotState = await context.strategies.snapshot.get(snapshotSlot);
+    const snapshotState = await context.strategies.snapshot.get(snapshotSlot, context);
     if (!snapshotState) {
       throw Error(`Can not find last snapshot state at slot=${snapshotSlot}`);
     }
