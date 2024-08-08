@@ -1,4 +1,4 @@
-export {initStateFromAnchorState, initStateFromDb, initStateFromEth1} from "./chain/index.js";
+export {initStateFromAnchorState, initStateFromDb, initStateFromEth1, getLastStoredState} from "./chain/index.js";
 export {BeaconDb, type IBeaconDb} from "./db/index.js";
 export {Eth1Provider, type IEth1Provider} from "./eth1/index.js";
 export {createNodeJsLibp2p, type NodeJsLibp2pOpts} from "./network/index.js";

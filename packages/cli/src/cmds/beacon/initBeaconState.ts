@@ -12,6 +12,7 @@ import {
   initStateFromAnchorState,
   initStateFromEth1,
   getStateTypeFromBytes,
+  getLastStoredState,
 } from "@lodestar/beacon-node";
 import {Checkpoint} from "@lodestar/types/phase0";
 
@@ -97,7 +98,12 @@ export async function initBeaconState(
   // fetch the latest state stored in the db which will be used in all cases, if it exists, either
   //   i)  used directly as the anchor state
   //   ii) used during verification of a weak subjectivity state,
-  const lastDbState = await db.stateArchive.lastValue();
+  const {state: lastDbStateBinary, slot: lastDbSlot} = await getLastStoredState({db});
+  const lastDbState =
+    lastDbStateBinary && lastDbSlot
+      ? chainForkConfig.getForkTypes(lastDbSlot).BeaconState.deserializeToViewDU(lastDbStateBinary)
+      : null;
+
   if (lastDbState) {
     const config = createBeaconConfig(chainForkConfig, lastDbState.genesisValidatorsRoot);
     const wssCheck = isWithinWeakSubjectivityPeriod(config, lastDbState, getCheckpointFromState(lastDbState));
