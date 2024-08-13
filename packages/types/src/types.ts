@@ -4,6 +4,7 @@ import {ts as altair} from "./altair/index.js";
 import {ts as bellatrix} from "./bellatrix/index.js";
 import {ts as capella} from "./capella/index.js";
 import {ts as deneb} from "./deneb/index.js";
+import {ts as ebps} from "./ebps/index.js";
 import {Slot} from "./primitive/types.js";
 
 export * from "./primitive/types.js";
@@ -12,6 +13,7 @@ export {ts as altair} from "./altair/index.js";
 export {ts as bellatrix} from "./bellatrix/index.js";
 export {ts as capella} from "./capella/index.js";
 export {ts as deneb} from "./deneb/index.js";
+export {ts as ebps} from "./ebps/index.js";
 
 /** Common non-spec type to represent roots as strings */
 export type RootHex = string;
@@ -126,6 +128,37 @@ type TypesByFork = {
     SSEPayloadAttributes: deneb.SSEPayloadAttributes;
     BlockContents: deneb.BlockContents;
     SignedBlockContents: deneb.SignedBlockContents;
+    ExecutionPayloadAndBlobsBundle: deneb.ExecutionPayloadAndBlobsBundle;
+    BlobsBundle: deneb.BlobsBundle;
+    Contents: deneb.Contents;
+    SyncCommittee: altair.SyncCommittee;
+    SyncAggregate: altair.SyncAggregate;
+  };
+  [ForkName.ebps]: {
+    BeaconBlockHeader: phase0.BeaconBlockHeader;
+    SignedBeaconBlockHeader: phase0.SignedBeaconBlockHeader;
+    BeaconBlock: ebps.BeaconBlock;
+    BeaconBlockBody: ebps.BeaconBlockBody;
+    BeaconState: ebps.BeaconState;
+    SignedBeaconBlock: ebps.SignedBeaconBlock;
+    Metadata: altair.Metadata;
+    LightClientHeader: ebps.LightClientHeader;
+    LightClientBootstrap: ebps.LightClientBootstrap;
+    LightClientUpdate: ebps.LightClientUpdate;
+    LightClientFinalityUpdate: ebps.LightClientFinalityUpdate;
+    LightClientOptimisticUpdate: ebps.LightClientOptimisticUpdate;
+    LightClientStore: ebps.LightClientStore;
+    BlindedBeaconBlock: ebps.BlindedBeaconBlock;
+    BlindedBeaconBlockBody: ebps.BlindedBeaconBlockBody;
+    SignedBlindedBeaconBlock: ebps.SignedBlindedBeaconBlock;
+    ExecutionPayload: ebps.ExecutionPayload;
+    ExecutionPayloadHeader: ebps.ExecutionPayloadHeader;
+    BuilderBid: ebps.BuilderBid;
+    SignedBuilderBid: ebps.SignedBuilderBid;
+    SSEPayloadAttributes: ebps.SSEPayloadAttributes;
+    BlockContents: ebps.BlockContents;
+    SignedBlockContents: ebps.SignedBlockContents;
+
     ExecutionPayloadAndBlobsBundle: deneb.ExecutionPayloadAndBlobsBundle;
     BlobsBundle: deneb.BlobsBundle;
     Contents: deneb.Contents;

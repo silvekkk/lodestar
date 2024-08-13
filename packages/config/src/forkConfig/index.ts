@@ -59,10 +59,18 @@ export function createForkConfig(config: ChainConfig): ForkConfig {
     prevVersion: config.CAPELLA_FORK_VERSION,
     prevForkName: ForkName.capella,
   };
+  const ebps: ForkInfo = {
+    name: ForkName.ebps,
+    seq: ForkSeq.ebps,
+    epoch: config.EBPS_FORK_EPOCH,
+    version: config.EBPS_FORK_VERSION,
+    prevVersion: config.DENEB_FORK_VERSION,
+    prevForkName: ForkName.deneb,
+  };
 
   /** Forks in order order of occurence, `phase0` first */
   // Note: Downstream code relies on proper ordering.
-  const forks = {phase0, altair, bellatrix, capella, deneb};
+  const forks = {phase0, altair, bellatrix, capella, deneb, ebps};
 
   // Prevents allocating an array on every getForkInfo() call
   const forksAscendingEpochOrder = Object.values(forks);

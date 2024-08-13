@@ -49,6 +49,10 @@ export const chainConfig: ChainConfig = {
   DENEB_FORK_VERSION: b("0x04000000"),
   DENEB_FORK_EPOCH: 269568, // March 13, 2024, 01:55:35pm UTC
 
+  // Ebps
+  EBPS_FORK_VERSION: b("0x05000000"),
+  EBPS_FORK_EPOCH: Infinity,
+
   // Time parameters
   // ---------------------------------------------------------------
   // 12 seconds

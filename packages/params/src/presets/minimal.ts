@@ -119,4 +119,10 @@ export const minimalPreset: BeaconPreset = {
   MAX_BLOB_COMMITMENTS_PER_BLOCK: 16,
   MAX_BLOBS_PER_BLOCK: 6,
   KZG_COMMITMENT_INCLUSION_PROOF_DEPTH: 9,
+
+  // ebps - EIP-7732
+  // uint64(2**9) = 512
+  PTC_SIZE: 512,
+  // 2**2 = 4
+  MAX_PAYLOAD_ATTESTATIONS: 4,
 };

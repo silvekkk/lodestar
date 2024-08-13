@@ -82,6 +82,10 @@ export type BeaconPreset = {
   MAX_BLOB_COMMITMENTS_PER_BLOCK: number;
   MAX_BLOBS_PER_BLOCK: number;
   KZG_COMMITMENT_INCLUSION_PROOF_DEPTH: number;
+
+  // EBPS
+  PTC_SIZE: number;
+  MAX_PAYLOAD_ATTESTATIONS: number;
 };
 
 /**
@@ -167,6 +171,10 @@ export const beaconPresetTypes: BeaconPresetTypes = {
   MAX_BLOB_COMMITMENTS_PER_BLOCK: "number",
   MAX_BLOBS_PER_BLOCK: "number",
   KZG_COMMITMENT_INCLUSION_PROOF_DEPTH: "number",
+
+  // EBPS
+  PTC_SIZE: "number",
+  MAX_PAYLOAD_ATTESTATIONS: "number",
 };
 
 type BeaconPresetTypes = {
