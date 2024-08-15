@@ -83,6 +83,8 @@ export function isForkBlobs(fork: ForkName): fork is ForkBlobs {
 
 // TODO add electra type in ForkPreEpbs
 export type ForkPreEpbs = ForkPreBlobs | ForkName.deneb;
+export type ForkExecutionPreEpbs = Exclude<ForkPreEpbs, ForkPreExecution>;
+export const forkExecutionPreEpbs = [ForkName.bellatrix, ForkName.capella, ForkName.deneb];
 export type ForkEpbs = Exclude<ForkName, ForkPreBlobs>;
 export const forkEpbs = exclude(forkAll, [
   ForkName.phase0,
